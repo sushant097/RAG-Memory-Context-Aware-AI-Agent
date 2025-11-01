@@ -185,6 +185,7 @@ python agent.py
 ## 🧠 Agentic Flow Diagram
 
 ```
+
 User Query
    │
    ▼
@@ -201,6 +202,7 @@ User Query
    │
    ▼
 Response / Highlight in Chrome
+
 ```
 
 ---
