@@ -60,7 +60,6 @@ FAISS Vector Store
 2. Sends it to backend via:
 
 ```http
-
    POST /index_page
    {
      "url": "https://example.com",
@@ -298,10 +297,11 @@ Response / Highlight in Chrome
 
 ## 🧑‍💻 Author
 
-**Name:** Sushant Gautam
-**Course:** EAG V2 — Agentic AI Systems
-**Assignment:** Session 7 – RAG, Memory, Context, and State Management
-**GitHub:** [@sushant097](https://github.com/sushant097)
+* **Name:** Sushant Gautam
+
+* **Course:** EAG V2 — Agentic AI Systems
+
+* **GitHub:** [@sushant097](https://github.com/sushant097)
 
 ---
 
