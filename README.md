@@ -295,17 +295,7 @@ Response / Highlight in Chrome
 
 ---
 
-## 🧑‍💻 Author
-
-* **Name:** Sushant Gautam
-
-* **Course:** EAG V2 — Agentic AI Systems
-
-* **GitHub:** [@sushant097](https://github.com/sushant097)
-
----
-
-## 📽️ Demo Video
+<!-- ## 📽️ Demo Video -->
 
 <!-- 🎥 [YouTube Demo — RAG with Memory Agent (Chrome + Gemini)](https://youtu.be/Gnc-11kfXFc) -->
 
