@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rag-memory-agent"
+version = "0.1.0"
+description = "RAG-powered memory agent using Gemini + LlamaIndex + FAISS."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Sushant Gautam" }]
+keywords = ["RAG", "FAISS", "LlamaIndex", "Gemini", "Agent"]
+
+dependencies = [
+  "python-dotenv>=0.9.9",
+  "faiss-cpu>=1.10.0",
+  "google-genai>=1.9.0",
+  "llama-index>=0.12.28",
+  "llama-index-embeddings-google-genai>=0.1.0",
+  "markitdown[all]>=0.1.1",
+  "mcp[cli]>=1.6.0",
+  "pillow>=11.1.0",
+  "rich>=14.0.0",
+  "scipy>=1.15.2",
+  "tqdm>=4.66.0",
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+]
+
+[project.scripts]
+# Run your agent main()
+agent-run = "rag_memory_agent.agent:main"
+# Run API if you expose `app` in http.py
+agent-api = "uvicorn.run:main"
+
+[project.optional-dependencies]
+dev = ["ruff>=0.6.9", "black>=24.10.0", "mypy>=1.13.0", "pytest>=8.3.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["rag_memory_agent"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.black]
+line-length = 100
