@@ -58,14 +58,16 @@ FAISS Vector Store
 
 1. **Chrome Extension** captures current webpage (URL, title, full text).
 2. Sends it to backend via:
-   ```http
+
+```http
+
    POST /index_page
    {
      "url": "https://example.com",
      "title": "Vector Databases 101",
      "text": "IVF and HNSW improve FAISS performance..."
    }
-````
+```
 
 3. Backend:
 
