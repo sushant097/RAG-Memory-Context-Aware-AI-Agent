@@ -242,6 +242,29 @@ python -m rag_memory_agent.agent
 
 ---
 
+## 🧩 Loading the Chrome Extension
+
+The repository includes a working Chrome MV3 extension inside the **`extension/`** folder.  
+It provides a minimal UI to search your indexed pages and highlights the retrieved snippet directly on the original website.
+
+### 🔹 Steps
+
+1. **Open Chrome → `chrome://extensions`**
+2. **Enable Developer mode** (top-right toggle)
+3. **Click “Load unpacked”** and select the project’s `extension/` folder.
+4. Pin 🧠 **Web Memory** from the extensions bar.
+
+### 🔹 Usage
+
+- The extension automatically indexes pages you visit (except confidential ones like Gmail, Slack, WhatsApp, etc.).  
+- Click the extension icon to **search your web memory**.  
+- Select a result → the page opens and **highlights** the matching text.  
+- You can configure the backend URL and denylist in the extension’s **Options page**.
+
+> Make sure the backend FastAPI server is running at `http://localhost:8000` (or the URL you set in Options).
+
+
+
 ## 🧩 MCP Tools
 
 | Tool                  | Description                                     |
@@ -296,7 +319,7 @@ This ensures the system works seamlessly **offline with Ollama** or **online wit
 
 ## 🕒 Temporal & Semantic Hybrid Ranking
 
-Retrieval doesn’t rely on cosine similarity alone — it also considers **how recently** a page was seen and optionally **how often** it was visited.
+Retrieval doesn’t rely on cosine similarity alone. It also considers **how recently** a page was seen and optionally **how often** it was visited.
 Each FAISS hit is scored by combining its semantic match (`sim`) with a **temporal freshness boost**, giving newer or frequently revisited memories higher priority.
 This hybrid ranking turns current FAISS index into a **living memory** — continuously evolving as we browse.
 
@@ -320,7 +343,7 @@ In simple terms:
 > *Recent or frequently visited pages surface first when semantic similarity is comparable.*
 
 
-## 🌍 Vision
+## Summary
 
 This project demonstrates how **RAG can evolve into long-term memory**:
 an AI system that learns continuously, remembers semantically, and retrieves with context awareness — bridging *information retrieval*, *memory persistence*, and *agentic cognition*.
