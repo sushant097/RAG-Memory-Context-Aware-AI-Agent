@@ -1,308 +1,271 @@
-
 # 🧠 RAG with Memory — Agentic Web Memory Backend
 
-A complete **agentic AI backend** built with `FastAPI`, `Gemini`, and `FAISS`, designed for the **RAG with Memory Assignment**.  
-It powers a Chrome Extension that can **index every visited webpage**, **store its semantic meaning**, and **recall the exact snippet later** — effectively becoming a **personal web memory agent**.
+A fully-agentic **AI memory system** built with `FastAPI`, `Gemini`, and `FAISS`.
+It continuously **learns from the web pages you visit**, builds a **semantic memory** of them, and later **recalls the precise snippet and source** when you ask — functioning as your **personal, retrieval-augmented web memory agent**.
 
 ---
 
-## 📘 Overview
+## 🚀 Concept
 
-This backend is structured around the **Agentic AI architecture** taught in class:
+This project turns the classic RAG (Retrieval-Augmented Generation) pipeline into a **living memory system** — one that perceives, decides, acts, and remembers.
+
+> “It doesn’t just search — it *remembers* what you read, when you read it, and where you saw it.”
+
+You can think of it as a self-contained *AI hippocampus* for your browser.
+
+---
+
+## 🧩 Agentic Architecture
+
+The backend follows the cognitive architecture:
 
 > **Agent → Perception → Memory → Decision → Action**
 
-Each module handles a distinct cognitive stage, and tools are implemented via a separate **MCP (Model Context Protocol)** server.
-
-### 🎯 Goal
-
-> Build an AI agent that continuously **learns from your browsing activity** and retrieves what it learned when you ask — connecting context, memory, and reasoning.
-
-### 💡 Example Use Case
-
-> You visit multiple web pages about *vector databases*.  
-> Later, you search in the Chrome extension:  
-> “What was that blog about IVF and HNSW indexing?”  
-> → The backend retrieves and highlights the relevant snippet from the exact source page.
-
----
-
-## 🧩 Architecture Overview
+Each layer mirrors a mental function, powered by **Gemini models** and **vector memory**.
 
 ```
-
-Chrome Extension → FastAPI HTTP Layer → MCP Tools → Agentic Pipeline (Gemini)
-↓
-FAISS Vector Store
-
-````
-
-### 🔹 Core Components
-
-| File | Purpose |
-|------|----------|
-| **agent.py** | Main orchestrator — runs Perception → Decision → Action loop. |
-| **perception.py** | Uses Gemini to clean and interpret user input, identify intent and tool hints. |
-| **memory.py** | Manages short-term in-memory state for conversational context. |
-| **decision.py** | Uses Gemini to plan — outputs `FUNCTION_CALL:` or `FINAL_ANSWER:`. |
-| **action.py** | Executes tool calls (e.g., `search_documents`, `index_page`) and normalizes output. |
-| **mcp_tools.py** | Implements actual tools: chunking, embedding (Google), FAISS search/indexing. |
-| **http.py** | Exposes REST endpoints (`/index_page`, `/search`) for Chrome extension integration. |
-| **models.py** | Configuration + Pydantic models (schema definitions, constants). |
-
----
-
-## 🧠 Data Flow
-
-### 🧩 Indexing Workflow
-
-1. **Chrome Extension** captures current webpage (URL, title, full text).
-2. Sends it to backend via:
-
-```http
-   POST /index_page
-   {
-     "url": "https://example.com",
-     "title": "Vector Databases 101",
-     "text": "IVF and HNSW improve FAISS performance..."
-   }
+Chrome Extension
+     ↓
+  HTTP API (FastAPI)
+     ↓
+   Core Logic
+     ↓
+  MCP Tools (index/search)
+     ↓
+  Agentic Loop (Gemini reasoning)
+     ↓
+  FAISS Vector Store (long-term memory)
 ```
 
-3. Backend:
-
-   * Chunks text into ~900-character blocks.
-   * Creates **Google embeddings (`text-embedding-004`)** via `llama-index`.
-   * Stores vectors in **FAISS index** + metadata JSON:
-
-     ```json
-     {
-       "url": "...",
-       "title": "...",
-       "chunk_id": "abcd#c001",
-       "timestamp": "2025-10-31T12:00:00Z",
-       "snippet": "IVF and HNSW improve..."
-     }
-     ```
+| Layer          | Role                                                                                      |             |           |
+| -------------- | ----------------------------------------------------------------------------------------- | ----------- | --------- |
+| **Perception** | Gemini interprets text/query, classifies intent, and hints which tool to use.             |             |           |
+| **Decision**   | Gemini planner outputs structured calls like `FUNCTION_CALL: search_documents             | query="..." | top_k=5`. |
+| **Action**     | Executes the function, then writes the result back into short-term memory.                |             |           |
+| **Memory**     | Maintains both *working memory* (session context) and *long-term FAISS memory*.           |             |           |
+| **MCP Tools**  | Provide clean modular interfaces (`index_page`, `search_documents`, `process_documents`). |             |           |
 
 ---
 
-### 🔎 Search Workflow
+## 🔬 Key Idea
 
-1. **User types query** in Chrome extension or CLI.
-2. **Perception**: Gemini classifies it as `semantic_search` and recommends tool `search_documents`.
-3. **Decision**: Gemini emits plan:
+Each webpage is broken into **semantic chunks**, embedded via **Google’s `text-embedding-004`** (or optionally local Nomic embeddings), and stored in a FAISS vector store.
+When a user later asks a question, the system performs **semantic + temporal retrieval**, boosting newer content and returning the *exact snippet* and *URL* where it appeared.
+
+---
+
+## 💡 Example Scenario
+
+1. You read multiple pages on *vector databases*.
+2. Weeks later you ask:
+
+   > “Which article explained IVF and HNSW in FAISS?”
+3. The agent searches its memory and returns:
 
    ```
-   FUNCTION_CALL: search_documents|query="vector databases"|top_k=5
+   “IVF and HNSW indexing accelerate large-scale similarity search...”
+   [Source: https://example.com/vector-db, ID: a3c1_002]
    ```
-4. **Action**: Executes `mcp_tools.search_documents()`:
 
-   * Embeds query.
-   * Searches FAISS (cosine similarity + **temporal boost**).
-   * Returns most relevant snippets.
-5. **Chrome extension** receives result, opens page, and **highlights** the matched text.
+   → The extension opens the page and highlights that text.
+
+---
+
+## 🧠 Core Features
+
+| Feature                       | Description                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------ |
+| **Gemini-Driven Reasoning**   | Both perception and decision use Gemini 2.0 Flash for intelligent planning.          |
+| **Dual Embedding Backend**    | Supports *Google embeddings* for precision or *Ollama/Nomic* for offline use.        |
+| **Temporal Awareness**        | Adds time-decay weighting: recent knowledge ranks higher in retrieval.               |
+| **Deduplication**             | SHA-1 hashing avoids re-embedding duplicate content.                                 |
+| **Hybrid Memory**             | Short-term (RAM) + long-term (FAISS) = contextual continuity.                        |
+| **MCP + REST Dual Interface** | Accessible both as an MCP stdio toolset and as a FastAPI HTTP service.               |
+| **Document Ingestion**        | Converts `.html`, `.pdf`, `.docx`, `.md` via MarkItDown for batch indexing.          |
+| **Extension-Ready**           | `/index_page` and `/search` endpoints integrate directly with Chrome MV3 extensions. |
 
 ---
 
 ## ⚙️ Tech Stack
 
-| Layer           | Technology                                      | Purpose                                   |
-| --------------- | ----------------------------------------------- | ----------------------------------------- |
-| **LLM**         | Gemini 2.0 Flash                                | Reasoning, planning, perception, decision |
-| **Embeddings**  | Google `text-embedding-004` (via `llama-index`) | High-quality semantic vectors             |
-| **Vector DB**   | FAISS (CPU)                                     | Efficient nearest-neighbor retrieval      |
-| **Parsing**     | MarkItDown                                      | Converts HTML, PDF, DOCX to markdown      |
-| **API Layer**   | FastAPI                                         | Chrome extension integration              |
-| **Protocol**    | MCP (Model Context Protocol)                    | Modular tool interface                    |
-| **Persistence** | JSONL + FAISS                                   | Long-term memory store                    |
+| Layer             | Technology                                 | Purpose                             |
+| ----------------- | ------------------------------------------ | ----------------------------------- |
+| **LLM**           | Gemini 2.0 Flash                           | Perception & decision reasoning     |
+| **Embeddings**    | Google `text-embedding-004` / Ollama Nomic | Vector representations              |
+| **Vector DB**     | FAISS                                      | Nearest-neighbor retrieval          |
+| **Protocol**      | MCP (Model Context Protocol)               | Modular tool calls                  |
+| **API**           | FastAPI                                    | Bridge for Chrome extension         |
+| **Parsing**       | MarkItDown                                 | Clean text extraction from HTML/PDF |
+| **Orchestration** | uv                                         | Modern Python dependency management |
 
 ---
 
-## 🚀 Running the Backend
+## 🧮 Data & Memory Model
 
-### 1️⃣ Setup with **uv**
+| Type                   | Description                                                       |
+| ---------------------- | ----------------------------------------------------------------- |
+| **Short-Term Memory**  | Session-scoped objects managed in RAM (`memory.py`).              |
+| **Long-Term Memory**   | FAISS index + JSONL metadata with embeddings, titles, timestamps. |
+| **Temporal Weighting** | `score = sim * (1 + α * freshness(days))` — prioritizes recency.  |
+| **Metadata Schema**    | `{url, title, snippet, chunk_id, timestamp, score}`               |
+| **Chunking**           | ~900 characters with 160-char overlap for semantic continuity.    |
+
+---
+
+## 📦 Repository Structure
+
+```
+rag_memory_agent/
+├── core.py           # All FAISS, embedding, chunking, and indexing logic
+├── mcp_tools.py      # MCP-decorated tools (index_page, search_documents)
+├── http.py           # REST endpoints for Chrome extension
+├── agent.py          # Orchestrator for Gemini-powered reasoning loop
+├── perception.py     # Gemini perception layer (intent extraction)
+├── decision.py       # Gemini decision layer (planner)
+├── action.py         # Executes tool calls and manages output
+├── memory.py         # Short-term session memory
+├── models.py         # Config + Pydantic schemas
+├── documents/        # Optional folder for batch ingestion
+└── faiss_index/      # Persistent FAISS store + metadata.jsonl
+```
+
+---
+
+## 🧭 Data Flow
+
+### 🔹 Indexing
+
+```
+Chrome → POST /index_page
+     ↓
+FastAPI → core.index_page_core()
+     ↓
+Chunks → Embeddings → FAISS + metadata
+```
+
+### 🔹 Searching
+
+```
+User query → perception.py (Gemini)
+     ↓
+decision.py → FUNCTION_CALL: search_documents
+     ↓
+action.py → core.search_documents_core()
+     ↓
+FAISS search (semantic + temporal)
+     ↓
+Return URLs + snippets → highlight in Chrome
+```
+
+---
+
+## 🏗️ Running the Backend
+
+### 1️⃣ Environment & Install
 
 ```bash
 uv venv
 uv sync
 ```
 
-### 2️⃣ Set Environment Variables
+### 2️⃣ Choose Embedding Provider
 
 ```bash
-echo "GOOGLE_API_KEY=your_gemini_api_key_here" > .env
+# A) Google (requires key)
+export EMBEDDINGS_PROVIDER=google
+export GOOGLE_API_KEY=your_key
+# B) Local (Ollama)
+ollama pull nomic-embed-text
+ollama serve
 ```
 
-### 3️⃣ (Optional) Batch Index Local Docs
-
-Put `.pdf`, `.html`, or `.txt` files inside `/documents` folder and run:
+### 3️⃣ Start API
 
 ```bash
-python mcp_tools.py
+uvicorn rag_memory_agent.http:app --reload --port 8000
 ```
 
-### 4️⃣ Run the HTTP API
-
-```bash
-uvicorn http:app --reload --port 8000
-```
-
-### 5️⃣ Test API
-
-#### ✅ Index a Page
+### 4️⃣ Index & Search
 
 ```bash
 curl -X POST http://localhost:8000/index_page \
-  -H "content-type: application/json" \
-  -d '{"url":"https://example.com","title":"Example","text":"Vector databases scale via IVF and HNSW..."}'
+  -H 'content-type: application/json' \
+  -d '{"url":"https://example.com","title":"Example","text":"Vector DBs use IVF, HNSW..."}'
+
+curl "http://localhost:8000/search?q=vector%20dbs"
 ```
 
-#### 🔍 Search
+### 5️⃣ CLI Agent
 
 ```bash
-curl "http://localhost:8000/search?q=vector%20databases"
-```
-
-### 6️⃣ (Optional) Run CLI Agent
-
-```bash
-python agent.py
-> what was that article about HNSW?
-```
-
----
-
-## 🧮 Memory & Retrieval Details
-
-| Type                   | Description                                                                |
-| ---------------------- | -------------------------------------------------------------------------- |
-| **Short-term memory**  | Managed by `memory.py`, keeps latest queries and results in-session.       |
-| **Long-term memory**   | Stored in FAISS index + JSON metadata, retrieved via embeddings.           |
-| **Temporal weighting** | Recent pages get a slight score boost: `score = sim * (1 + α * freshness)` |
-| **Deduplication**      | Based on SHA1 chunk hashes, avoids re-indexing same content.               |
-
----
-
-## 🧠 Agentic Flow Diagram
-
-```
-
-User Query
-   │
-   ▼
-[Perception]  → Gemini extracts intent & tool hint
-   │
-   ▼
-[Decision]    → Gemini outputs FUNCTION_CALL
-   │
-   ▼
-[Action]      → Executes tool (index/search)
-   │
-   ▼
-[Memory]      → Stores results (short-term + FAISS)
-   │
-   ▼
-Response / Highlight in Chrome
-
+python -m rag_memory_agent.agent
+> what was that blog about HNSW indexing?
 ```
 
 ---
 
 ## 🧩 MCP Tools
 
-| Tool                  | Description                                         |
-| --------------------- | --------------------------------------------------- |
-| **index_page**        | Indexes text + metadata from web pages.             |
-| **search_documents**  | Semantic FAISS search (Google embeddings).          |
-| **process_documents** | Batch-ingests `/documents` folder using MarkItDown. |
+| Tool                  | Description                                     |
+| --------------------- | ----------------------------------------------- |
+| **index_page**        | Ingests live web text (chunks → embed → FAISS). |
+| **search_documents**  | Returns semantic matches with source metadata.  |
+| **process_documents** | Batch-ingests `/documents` folder.              |
 
 ---
 
-## 🧭 Project Tree
+## 🏆 Unique Aspects
 
-```
-.
-├── agent.py
-├── action.py
-├── decision.py
-├── memory.py
-├── perception.py
-├── mcp_tools.py
-├── http.py
-├── models.py
-├── documents/
-├── faiss_index/
-│   ├── index.bin
-│   └── metadata.jsonl
-└── pyproject.toml
-```
+✅ **Unified Core Architecture**
 
----
+All indexing, retrieval, and embedding logic consolidated in `core.py`, ensuring MCP, REST, and agent all share one codebase.
 
-## 🏆 Extra Work Beyond Assignment
+✅ **Temporal & Semantic Hybrid Ranking**
 
-✅ **1. Google Gemini Integration**
+Combines cosine similarity with a lightweight temporal decay model — newer memories surface first.
 
-* Used **Gemini 2.0 Flash** for both perception and decision layers, replacing static rule-based parsing.
-* Enables contextual tool planning and intelligent intent extraction.
-
-✅ **2. Temporal-Aware Memory**
-
-* Added **recency weighting** in FAISS search:
-
-  ```python
+```python
   score = sim * (1 + α * freshness(days))
   ```
 
   → newer pages rank higher.
 
-✅ **3. Structured Metadata**
+✅ **Dual-Mode Memory**
 
-* Every chunk has structured metadata (`url`, `title`, `timestamp`, `chunk_id`, `snippet`)
-  → simplifies highlighting in Chrome extension.
+Supports **short-term** (RAM) and **long-term** (FAISS) memory separation — enabling hybrid reasoning loops.
 
-✅ **4. Dual-Mode Memory**
+✅ **Dual Transport (MCP + REST)**
 
-* Supports **short-term** (RAM) and **long-term** (FAISS) memory separation — enabling hybrid reasoning loops.
+Works both as a traditional MCP stdio toolset *and* a REST API — bridging AI agent ecosystems and browser extensions.
 
-✅ **5. Clean API for Chrome**
+✅ **Dynamic Embedding Backend**
 
-* Added **FastAPI shim** (`/index_page` and `/search`) to allow direct browser communication.
+Can seamlessly switch between local (`ollama nomic-embed-text`) and cloud (`text-embedding-004`) without touching code.
 
-✅ **6. Full MCP Compatibility**
+✅ **Agentic Reasoning with Gemini**
 
-* Follows instructor’s **MCP architecture** for tool invocation, supporting future expansion.
+Perception and decision stages leverage Gemini 2.0 Flash for contextual tool planning, not static prompts.
 
-✅ **7. Batch + Live Indexing**
+✅ **Data Efficiency**
 
-* Two ingestion modes:
+Uses deduplicated SHA1 chunk hashing and JSONL metadata for minimal storage overhead.
 
-  * Batch (`process_documents`)
-  * Live (Chrome → `/index_page`)
+✅ **Practical RAG Evolution**
 
----
-
-## 📦 Future Work
-
-* 🪶 **Chrome Extension Integration**
-  Next phase — capture DOM text and highlight retrieved snippets.
-
-* 📚 **Hybrid RAG (Notes + Web)**
-  Merge user’s personal notes (DynamoDB or Notion API) with FAISS search.
-
-* 🧩 **Multi-Agent Coordination**
-  Add “Summarizer” and “Planner” agents for richer recall and question answering.
+Instead of ephemeral chat memory, this agent builds a persistent semantic map of what the user reads online.
 
 ---
 
-<!-- ## 📽️ Demo Video -->
+## 🌍 Vision
 
-<!-- 🎥 [YouTube Demo — RAG with Memory Agent (Chrome + Gemini)](https://youtu.be/Gnc-11kfXFc) -->
+This project demonstrates how **RAG can evolve into long-term memory**:
+an AI system that learns continuously, remembers semantically, and retrieves with context awareness — bridging *information retrieval*, *memory persistence*, and *agentic cognition*.
 
 ---
 
 ## 🪄 Summary
 
-> This project isn’t just a search index.
-> It’s a **cognitive memory system** that perceives, plans, and remembers like an agent —
-> powered by **Gemini**, **FAISS**, and **Google embeddings**, built to evolve into a **truly agentic RAG**.
+> **RAG with Memory** isn’t just another retrieval project —
+> it’s a **cognitive infrastructure** for AI systems that think, remember, and act autonomously.
+> Combining **Gemini reasoning**, **FAISS retrieval**, and **Chrome extension integration**,
+> it sets the groundwork for *persistent, context-aware agents*.
