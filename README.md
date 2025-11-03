@@ -277,6 +277,49 @@ python -m rag_memory_agent.agent
 
 ---
 
+## 🌐 Online / Offline Mode
+
+The backend dynamically adapts between **Gemini-powered reasoning** and a **fully local fallback** depending on environment configuration.
+
+* When `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) is **available** in `.env`, both **Perception** and **Decision** modules use **Gemini 2.0 Flash** for natural-language understanding and planning.
+* When no key is present, they **gracefully fall back** to lightweight, rule-based logic — still able to perform indexing and semantic retrieval locally.
+* All vector embeddings, FAISS indexing, and search remain identical in either mode.
+
+```text
+Online  → Gemini reasoning + Google or Ollama embeddings
+Offline → Rule-based reasoning + Ollama embeddings (no internet required)
+```
+
+This ensures the system works seamlessly **offline with Ollama** or **online with Gemini/Google**, without any code changes — only `.env` variables determine the mode.
+
+---
+
+## 🕒 Temporal & Semantic Hybrid Ranking
+
+Retrieval doesn’t rely on cosine similarity alone — it also considers **how recently** a page was seen and optionally **how often** it was visited.
+Each FAISS hit is scored by combining its semantic match (`sim`) with a **temporal freshness boost**, giving newer or frequently revisited memories higher priority.
+This hybrid ranking turns current FAISS index into a **living memory** — continuously evolving as we browse.
+
+### Concept
+
+```python
+days = (now - timestamp) / 86400
+freshness = exp(-λ * days)           # exponential decay (half-life ~7 days)
+popularity = 1 - exp(-visits / 3)    # more visits → higher influence
+boost = 1 + α * (w_f*freshness + w_p*popularity)
+score = sim * boost
+```
+
+* **Freshness:** recent pages fade smoothly over time (default half-life ≈ 7 days).
+* **Popularity:** repeated visits increase ranking weight.
+* **α (max boost):** limits total influence (e.g., ≤ 25 %).
+* **w_f / w_p:** control the relative weight of recency vs. frequency.
+
+In simple terms:
+
+> *Recent or frequently visited pages surface first when semantic similarity is comparable.*
+
+
 ## 🌍 Vision
 
 This project demonstrates how **RAG can evolve into long-term memory**:
