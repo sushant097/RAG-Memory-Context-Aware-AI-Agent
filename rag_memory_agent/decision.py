@@ -34,5 +34,5 @@ def decide(p: PerceptionOut, recent_memory: list[MemoryItem]) -> str:
     out = (resp.text or "").strip()
     # last fallback
     if not out:
-        return f'FUNCTION_CALL: search_documents|query=\"{p.cleaned_query}"|top_k=5'
+        out = f'FUNCTION_CALL: search_documents|query="{p.cleaned_query}"|top_k=5'
     return out
