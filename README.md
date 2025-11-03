@@ -254,43 +254,26 @@ python -m rag_memory_agent.agent
 
 ## 🏆 Unique Aspects
 
-✅ **Unified Core Architecture**
+✅ **Unified Core Architecture** : All indexing, retrieval, and embedding logic consolidated in `core.py`, ensuring MCP, REST, and agent all share one codebase.
 
-All indexing, retrieval, and embedding logic consolidated in `core.py`, ensuring MCP, REST, and agent all share one codebase.
-
-✅ **Temporal & Semantic Hybrid Ranking**
-
-Combines cosine similarity with a lightweight temporal decay model — newer memories surface first.
+✅ **Temporal & Semantic Hybrid Ranking**: Combines cosine similarity with a lightweight temporal decay model — newer memories surface first.
 
 ```python
   score = sim * (1 + α * freshness(days))
+  # newer pages rank higher.
   ```
 
-  → newer pages rank higher.
+✅ **Dual-Mode Memory**: Supports **short-term** (RAM) and **long-term** (FAISS) memory separation — enabling hybrid reasoning loops.
 
-✅ **Dual-Mode Memory**
+✅ **Dual Transport (MCP + REST)**: Works both as a traditional MCP stdio toolset *and* a REST API — bridging AI agent ecosystems and browser extensions.
 
-Supports **short-term** (RAM) and **long-term** (FAISS) memory separation — enabling hybrid reasoning loops.
+✅ **Dynamic Embedding Backend**: Can seamlessly switch between local (`ollama nomic-embed-text`) and cloud (`text-embedding-004`) without touching code.
 
-✅ **Dual Transport (MCP + REST)**
+✅ **Agentic Reasoning with Gemini**: Perception and decision stages leverage Gemini 2.0 Flash for contextual tool planning, not static prompts.
 
-Works both as a traditional MCP stdio toolset *and* a REST API — bridging AI agent ecosystems and browser extensions.
+✅ **Data Efficiency**: Uses deduplicated SHA1 chunk hashing and JSONL metadata for minimal storage overhead.
 
-✅ **Dynamic Embedding Backend**
-
-Can seamlessly switch between local (`ollama nomic-embed-text`) and cloud (`text-embedding-004`) without touching code.
-
-✅ **Agentic Reasoning with Gemini**
-
-Perception and decision stages leverage Gemini 2.0 Flash for contextual tool planning, not static prompts.
-
-✅ **Data Efficiency**
-
-Uses deduplicated SHA1 chunk hashing and JSONL metadata for minimal storage overhead.
-
-✅ **Practical RAG Evolution**
-
-Instead of ephemeral chat memory, this agent builds a persistent semantic map of what the user reads online.
+✅ **Practical RAG Evolution**: Instead of ephemeral chat memory, this agent builds a persistent semantic map of what the user reads online.
 
 ---
 
