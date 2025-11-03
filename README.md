@@ -1,7 +1,7 @@
 # 🧠 RAG with Memory — Agentic Web Memory Backend
 
 A fully-agentic **AI memory system** built with `FastAPI`, `Gemini`, and `FAISS`.
-It continuously **learns from the web pages you visit**, builds a **semantic memory** of them, and later **recalls the precise snippet and source** when you ask — functioning as your **personal, retrieval-augmented web memory agent**.
+It continuously **learns from the web pages you visit**, builds a **semantic memory** of them, and later **recalls the precise snippet and source** when we ask — functioning as our **personal, retrieval-augmented web memory agent**.
 
 ---
 
@@ -9,9 +9,9 @@ It continuously **learns from the web pages you visit**, builds a **semantic mem
 
 This project turns the classic RAG (Retrieval-Augmented Generation) pipeline into a **living memory system** — one that perceives, decides, acts, and remembers.
 
-> “It doesn’t just search — it *remembers* what you read, when you read it, and where you saw it.”
+> “It doesn’t just search — it *remembers* what we read, when we read it, and where we saw it.”
 
-You can think of it as a self-contained *AI hippocampus* for your browser.
+We can think of it as a self-contained *AI hippocampus* for the browser.
 
 ---
 
@@ -57,7 +57,7 @@ When a user later asks a question, the system performs **semantic + temporal ret
 ## 💡 Example Scenario
 
 1. You read multiple pages on *vector databases*.
-2. Weeks later you ask:
+2. Weeks later if we ask:
 
    > “Which article explained IVF and HNSW in FAISS?”
 3. The agent searches its memory and returns:
