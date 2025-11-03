@@ -1,5 +1,5 @@
 from __future__ import annotations
-from models import PerceptionOut, GOOGLE_API_KEY, GEMINI_MODEL_PERCEPTION
+from .models import PerceptionOut, GOOGLE_API_KEY, GEMINI_MODEL_PERCEPTION
 import google.genai as genai
 import json
 
@@ -34,10 +34,14 @@ def perceive(text: str) -> PerceptionOut:
     
     try:
         data = json.loads(raw)
-    except Exception:
-        data = {"cleaned_query": text.strip(), "intent": "semantic_search", "tool_hint":"search_documents"}
         return PerceptionOut(
             cleaned_query=data.get("cleaned_query", text.strip()),
             intent=data.get("intent", "semantic_search"),
-            tool_hint=data.get("tool_hint", "search_documents")
+            tool_hint=data.get("tool_hint", "search_documents"),
+        )
+    except Exception:
+        return PerceptionOut(
+            cleaned_query=text.strip(),
+            intent="semantic_search",
+            tool_hint="search_documents",
         )
