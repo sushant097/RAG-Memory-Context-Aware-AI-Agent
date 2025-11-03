@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Optional
-from models import MemoryItem
+from .models import MemoryItem
 
 class ShortTermMemory:
     """Simple in-RAM short-term memory for the agent loop."""
