@@ -56,7 +56,7 @@ When a user later asks a question, the system performs **semantic + temporal ret
 
 ## 💡 Example Scenario
 
-1. You read multiple pages on *vector databases*.
+1. We read multiple pages on *vector databases*.
 2. Weeks later if we ask:
 
    > “Which article explained IVF and HNSW in FAISS?”
@@ -88,15 +88,15 @@ When a user later asks a question, the system performs **semantic + temporal ret
 
 ## ⚙️ Tech Stack
 
-| Layer             | Technology                                 | Purpose                             |
-| ----------------- | ------------------------------------------ | ----------------------------------- |
-| **LLM**           | Gemini 2.0 Flash                           | Perception & decision reasoning     |
-| **Embeddings**    | Google `text-embedding-004` / Ollama Nomic | Vector representations              |
-| **Vector DB**     | FAISS                                      | Nearest-neighbor retrieval          |
-| **Protocol**      | MCP (Model Context Protocol)               | Modular tool calls                  |
-| **API**           | FastAPI                                    | Bridge for Chrome extension         |
-| **Parsing**       | MarkItDown                                 | Clean text extraction from HTML/PDF |
-| **Orchestration** | uv                                         | Modern Python dependency management |
+| Layer          | Technology                                              | Purpose                                     |
+| -------------- | ------------------------------------------------------- | ------------------------------------------- |
+| **LLM**        | Gemini 2.0 Flash                                        | Perception & decision reasoning             |
+| **Embeddings** | Google `text-embedding-004` / Ollama `nomic-embed-text` | Vector representations                      |
+| **Vector DB**  | FAISS                                                   | Nearest-neighbor retrieval                  |
+| **Protocol**   | MCP (Model Context Protocol)                            | Modular tool calls                          |
+| **API**        | FastAPI                                                 | Bridge for Chrome extension                 |
+| **Parsing**    | MarkItDown                                              | Clean text extraction from HTML/PDF         |
+| **Package**    | uv                                                      | Dependency management & virtual environment |
 
 ---
 
@@ -116,18 +116,20 @@ When a user later asks a question, the system performs **semantic + temporal ret
 
 ```
 rag_memory_agent/
-├── core.py           # All FAISS, embedding, chunking, and indexing logic
+├── core.py           # Core FAISS, embedding, chunking, and indexing logic
 ├── mcp_tools.py      # MCP-decorated tools (index_page, search_documents)
 ├── http.py           # REST endpoints for Chrome extension
-├── agent.py          # Orchestrator for Gemini-powered reasoning loop
-├── perception.py     # Gemini perception layer (intent extraction)
-├── decision.py       # Gemini decision layer (planner)
-├── action.py         # Executes tool calls and manages output
+├── agent.py          # Orchestrator for Gemini reasoning loop
+├── perception.py     # Gemini perception (intent extraction)
+├── decision.py       # Gemini decision (planner)
+├── action.py         # Executes tool calls
 ├── memory.py         # Short-term session memory
-├── models.py         # Config + Pydantic schemas
-├── documents/        # Optional folder for batch ingestion
+├── models.py         # Pydantic schemas
+├── config.py         # Centralized configuration (.env loader)
+├── documents/        # Optional batch ingestion folder
 └── faiss_index/      # Persistent FAISS store + metadata.jsonl
 ```
+
 
 ---
 
@@ -168,33 +170,69 @@ uv venv
 uv sync
 ```
 
+
 ### 2️⃣ Choose Embedding Provider
 
-```bash
-# A) Google (requires key)
-export EMBEDDINGS_PROVIDER=google
-export GOOGLE_API_KEY=your_key
-# B) Local (Ollama)
-ollama pull nomic-embed-text
-ollama serve
-```
+You can run the system with **either** local Ollama or cloud-based Google embeddings.
 
-### 3️⃣ Start API
+#### 🧩 Option A — Local (Ollama)
+
+1. **Download Ollama**
+   → [https://ollama.com/download](https://ollama.com/download)
+
+2. **Pull and run the model**
+
+   ```bash
+   ollama pull nomic-embed-text
+   ollama serve
+   ```
+
+3. **Set provider in `.env`**
+
+   ```bash
+   EMBEDDINGS_PROVIDER=ollama
+   EMBED_URL=http://localhost:11434/api/embeddings
+   EMBED_MODEL=nomic-embed-text
+   ```
+
+#### ☁️ Option B — Google Embeddings
+
+1. **Set provider and credentials in `.env`:**
+
+   ```bash
+   # "google" or "ollama"
+   EMBEDDINGS_PROVIDER=google
+   GOOGLE_API_KEY="<insert_your_api_key>"
+   GOOGLE_EMBED_MODEL=text-embedding-004
+   ```
+
+2. Ensure dependencies are installed:
+
+   ```bash
+   uv add llama-index-embeddings-google-genai google-genai
+   ```
+
+---
+
+### 3️⃣ Start the API
 
 ```bash
 uvicorn rag_memory_agent.http:app --reload --port 8000
 ```
 
+---
+
 ### 4️⃣ Index & Search
 
 ```bash
 curl -X POST http://localhost:8000/index_page \
-  -H 'content-type: application/json' \
-  -d '{"url":"https://example.com","title":"Example","text":"Vector DBs use IVF, HNSW..."}'
+  -H "content-type: application/json" \
+  -d '{"url":"https://example.com","title":"Example","text":"Vector DBs use IVF and HNSW..."}'
 
 curl "http://localhost:8000/search?q=vector%20dbs"
 ```
 
+---
 ### 5️⃣ CLI Agent
 
 ```bash
@@ -260,12 +298,3 @@ Instead of ephemeral chat memory, this agent builds a persistent semantic map of
 
 This project demonstrates how **RAG can evolve into long-term memory**:
 an AI system that learns continuously, remembers semantically, and retrieves with context awareness — bridging *information retrieval*, *memory persistence*, and *agentic cognition*.
-
----
-
-## 🪄 Summary
-
-> **RAG with Memory** isn’t just another retrieval project —
-> it’s a **cognitive infrastructure** for AI systems that think, remember, and act autonomously.
-> Combining **Gemini reasoning**, **FAISS retrieval**, and **Chrome extension integration**,
-> it sets the groundwork for *persistent, context-aware agents*.
