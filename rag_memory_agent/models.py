@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 
 # ------ Config (env-overridable) ------
-GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
+GOOGLE_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL_DECISION: str = os.getenv("GEMINI_MODEL_DECISION", "gemini-2.0-flash")
 GEMINI_MODEL_PERCEPTION: str = os.getenv("GEMINI_MODEL_PERCEPTION", "gemini-2.0-flash")
 EMBED_MODEL: str = os.getenv("EMBED_MODEL", "text-embedding-004")   # Google embeddings
