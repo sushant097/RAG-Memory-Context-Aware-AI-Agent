@@ -1,8 +1,8 @@
 from __future__ import annotations
-from perception import perceive
-from memory import STM, MemoryItem
-from decision import decide
-from action import execute
+from .perception import perceive
+from .memory import STM, MemoryItem
+from .decision import decide
+from .action import execute
 
 def run_once(user_text: str, session_id: str = "cli"):
     p = perceive(user_text)
