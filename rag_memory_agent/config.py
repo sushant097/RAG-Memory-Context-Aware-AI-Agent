@@ -32,6 +32,12 @@ CHUNK_SIZE      = int(os.getenv("CHUNK_SIZE", "900"))
 CHUNK_OVERLAP   = int(os.getenv("CHUNK_OVERLAP", "160"))
 RECENCY_ALPHA   = float(os.getenv("RECENCY_ALPHA", "0.05"))
 
+# --- Temporal ranking knobs ---
+HALF_LIFE_DAYS     = float(os.getenv("HALF_LIFE_DAYS", "7"))   # recency half-life
+FRESHNESS_WEIGHT   = float(os.getenv("FRESHNESS_WEIGHT", "0.7"))
+POPULARITY_WEIGHT  = float(os.getenv("POPULARITY_WEIGHT", "0.3"))
+MAX_TEMPORAL_BOOST = float(os.getenv("MAX_TEMPORAL_BOOST", "0.25"))  # ≤ 25% lift
+
 # ---------- Optional tuning ----------
 EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "100"))  # for Google
 MAX_CHUNKS_PER_DOC = int(os.getenv("MAX_CHUNKS_PER_DOC", "500"))
