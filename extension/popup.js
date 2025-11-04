@@ -20,10 +20,12 @@ function renderResult(r) {
   `;
   el.addEventListener("click", async () => {
     try {
-      await chrome.runtime.sendMessage({
+      const query = q.value.trim();
+      chrome.runtime.sendMessage({
         type: "OPEN_AND_HIGHLIGHT",
         url: r.url,
-        snippet: r.snippet
+        snippet: r.snippet,
+        query
       });
       window.close();
     } catch (e) {
