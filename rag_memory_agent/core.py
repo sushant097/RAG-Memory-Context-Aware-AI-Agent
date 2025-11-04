@@ -14,7 +14,8 @@ from .config import (
     GOOGLE_API_KEY, EMBED_URL, EMBED_MODEL,
     GOOGLE_EMBED_MODEL, EMBED_BATCH_SIZE,
     CHUNK_SIZE, CHUNK_OVERLAP, 
-    HALF_LIFE_DAYS, FRESHNESS_WEIGHT, POPULARITY_WEIGHT, MAX_TEMPORAL_BOOST
+    HALF_LIFE_DAYS, FRESHNESS_WEIGHT, POPULARITY_WEIGHT, MAX_TEMPORAL_BOOST, SIM_WEIGHT,
+    TEMP_WEIGHT
 )
 # ---------- Embeddings ----------
 _embedder = None
@@ -111,6 +112,31 @@ def _chunks(text: str, size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
         yield i, text[i:i+size]
         i += max(1, size - overlap)
 
+# ---------- Core functions ----------
+def visit_url_core(url: str) -> dict:
+    """
+    Increment visit count and update last_seen for all chunks of this URL.
+    Creates no new vectors; just updates metadata and persists.
+    Returns {ok, url, visits} where visits is the max count across this URL's chunks.
+    """
+    _ensure_loaded()
+    now_iso = datetime.utcnow().isoformat() + "Z"
+    found = False
+    max_visits = 0
+    for row in _meta:
+        if row.get("url") == url:
+            found = True
+            row["last_seen"] = now_iso
+            v = int(row.get("visits", 0)) + 1
+            row["visits"] = v
+            max_visits = max(max_visits, v)
+
+    if not found:
+        return {"ok": False, "url": url, "visits": 0, "reason": "url_not_indexed"}
+
+    _save()
+    return {"ok": True, "url": url, "visits": max_visits}
+
 # ---------- Public core APIs ----------
 def index_page_core(url: str, title: str, text: str) -> Dict[str, Any]:
     """
@@ -123,8 +149,11 @@ def index_page_core(url: str, title: str, text: str) -> Dict[str, Any]:
 
     rows, payloads = [], []
     existing = {m.get("chunk_hash") for m in _meta if "chunk_hash" in m}
-    prior_visits = max([m.get("visits", 0) for m in _meta if m.get("url")==url] or [0])
-    visits = prior_visits + 1
+    
+    prior = [m for m in _meta if m.get("url") == url]
+    prior_visits = max([int(m.get("visits", 0)) for m in prior], default=0)
+    visits_init = max(1, prior_visits)  # keep at least 1
+
 
     for off, chunk in _chunks(text):
         if len(rows) >= MAX_CHUNKS_PER_DOC:
@@ -141,7 +170,8 @@ def index_page_core(url: str, title: str, text: str) -> Dict[str, Any]:
             "snippet": chunk[:240],
             "chunk_hash": ch,
             "chunk": chunk,
-            "visits": visits
+            "visits": visits_init,
+            "last_seen": ts
         })
         payloads.append(chunk)
 
@@ -188,9 +218,12 @@ def search_documents_core(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         hybrid = FRESHNESS_WEIGHT * freshness + POPULARITY_WEIGHT * popularity  # in [0..1]
 
         # 4) Cap total temporal boost for stability (e.g., ≤ +25%)
-        boost = 1.0 + min(MAX_TEMPORAL_BOOST, MAX_TEMPORAL_BOOST * hybrid)
+        # boost = 1.0 + min(MAX_TEMPORAL_BOOST, MAX_TEMPORAL_BOOST * hybrid)
 
-        score = float(sim * boost)
+        # score = float(sim * boost)
+        # Weighted blend (semantics dominate)
+        final = (SIM_WEIGHT * float(sim)) + (TEMP_WEIGHT * float(hybrid))
+        score = float(final)
 
         hits.append({
             "url": m.get("url",""),
