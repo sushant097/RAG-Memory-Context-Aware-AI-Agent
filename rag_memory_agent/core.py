@@ -6,53 +6,59 @@ from datetime import datetime
 
 import numpy as np
 import faiss
+import math
 
-# ---------- Config ----------
-ROOT = Path(__file__).parent.parent.resolve()
-FAISS_DIR = Path(os.getenv("FAISS_DIR", ROOT / "faiss_index"))
-FAISS_DIR.mkdir(parents=True, exist_ok=True)
-INDEX_PATH = FAISS_DIR / "index.bin"
-META_PATH  = FAISS_DIR / "metadata.jsonl"
 
-CHUNK_SIZE    = int(os.getenv("CHUNK_SIZE", "900"))
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "160"))
-RECENCY_ALPHA = float(os.getenv("RECENCY_ALPHA", "0.05"))
-
-EMBED_PROVIDER = os.getenv("EMBEDDINGS_PROVIDER", "ollama").lower()  # "ollama" | "google"
-# Ollama
-EMBED_URL   = os.getenv("EMBED_URL", "http://localhost:11434/api/embeddings")
-EMBED_MODEL = os.getenv("EMBED_MODEL", "nomic-embed-text")
-# Google (via LlamaIndex)
-GOOGLE_EMBED_MODEL = os.getenv("GOOGLE_EMBED_MODEL", "text-embedding-004")
-
+from .config import (
+    FAISS_DIR, INDEX_PATH, MAX_CHUNKS_PER_DOC, META_PATH, EMBEDDINGS_PROVIDER,
+    GOOGLE_API_KEY, EMBED_URL, EMBED_MODEL,
+    GOOGLE_EMBED_MODEL, EMBED_BATCH_SIZE,
+    CHUNK_SIZE, CHUNK_OVERLAP, 
+    HALF_LIFE_DAYS, FRESHNESS_WEIGHT, POPULARITY_WEIGHT, MAX_TEMPORAL_BOOST
+)
 # ---------- Embeddings ----------
 _embedder = None
 
 def _embed_batch(texts: List[str]) -> np.ndarray:
     """
-    Returns L2-normalized float32 embeddings for `texts`.
-    Provider controlled by EMBEDDINGS_PROVIDER env.
+    Returns L2-normalized float32 embeddings for texts.
+    Provider controlled by EMBEDDINGS_PROVIDER env var:
+      - ollama  → local http://localhost:11434/api/embeddings
+      - google  → via GoogleGenAIEmbedding (llama_index-embeddings-google-genai)
     """
     global _embedder
-    if EMBED_PROVIDER == "google":
-        # Lazy init LlamaIndex Google embedder
+    if EMBEDDINGS_PROVIDER == "google":
         if _embedder is None:
-            from llama_index.embeddings.google import GoogleGenerativeAIEmbedding
-            _embedder = GoogleGenerativeAIEmbedding(model_name=GOOGLE_EMBED_MODEL)
+            try:
+                from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
+            except ImportError:
+                raise ImportError(
+                    "GoogleGenAIEmbedding not found. "
+                    "Install with: pip install llama-index-embeddings-google-genai"
+                )
+            
+            _embedder = GoogleGenAIEmbedding(
+                model_name=GOOGLE_EMBED_MODEL,
+                embed_batch_size=EMBED_BATCH_SIZE,  # safe batch size for API
+                )
         vecs = _embedder.get_text_embedding_batch(texts)
         arr = np.array(vecs, dtype="float32")
     else:
-        # Ollama embeddings API
+        # ---------- Ollama local embeddings ----------
         import requests
         arr = []
         for t in texts:
-            r = requests.post(EMBED_URL, json={"model": EMBED_MODEL, "prompt": t}, timeout=60)
+            r = requests.post(
+                EMBED_URL,
+                json={"model": EMBED_MODEL, "prompt": t},
+                timeout=60,
+            )
             r.raise_for_status()
             v = np.array(r.json()["embedding"], dtype="float32")
             arr.append(v)
         arr = np.stack(arr, axis=0)
 
-    # L2 normalize for cosine/IP scoring
+    # normalize for cosine/IP equivalence
     norms = np.linalg.norm(arr, axis=1, keepdims=True)
     norms[norms == 0.0] = 1.0
     return arr / norms
@@ -117,8 +123,12 @@ def index_page_core(url: str, title: str, text: str) -> Dict[str, Any]:
 
     rows, payloads = [], []
     existing = {m.get("chunk_hash") for m in _meta if "chunk_hash" in m}
+    prior_visits = max([m.get("visits", 0) for m in _meta if m.get("url")==url] or [0])
+    visits = prior_visits + 1
 
     for off, chunk in _chunks(text):
+        if len(rows) >= MAX_CHUNKS_PER_DOC:
+            break
         ch = hashlib.sha1((url + str(off) + chunk).encode()).hexdigest()[:16]
         if ch in existing:
             continue
@@ -130,7 +140,8 @@ def index_page_core(url: str, title: str, text: str) -> Dict[str, Any]:
             "offset_start": off,
             "snippet": chunk[:240],
             "chunk_hash": ch,
-            "chunk": chunk
+            "chunk": chunk,
+            "visits": visits
         })
         payloads.append(chunk)
 
@@ -164,7 +175,21 @@ def search_documents_core(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         except Exception:
             ts_sec = now
         days = max(0.0, (now - ts_sec) / 86400.0)
-        boost = 1.0 + RECENCY_ALPHA * max(0.0, (30.0 - min(days, 30.0))) / 30.0
+        
+        # 1) Freshness (exponential decay): 1.0 today, 0.5 after HALF_LIFE_DAYS, 0.25 after 2*half-life, etc.
+        lambda_   = math.log(2) / max(1e-6, HALF_LIFE_DAYS)
+        freshness = math.exp(-lambda_ * days)  # [0..1], higher = newer
+
+        # 2) Popularity (smoothly saturating with visits; ~0 for never, →1 as visits grow)
+        visits      = float(m.get("visits", 1))
+        popularity  = 1.0 - math.exp(-visits / 3.0)  # 3 is a soft scale; tweak if needed
+
+        # 3) Blend (weights sum ≤ 1); keep a tiny floor so recency can help even with no visits
+        hybrid = FRESHNESS_WEIGHT * freshness + POPULARITY_WEIGHT * popularity  # in [0..1]
+
+        # 4) Cap total temporal boost for stability (e.g., ≤ +25%)
+        boost = 1.0 + min(MAX_TEMPORAL_BOOST, MAX_TEMPORAL_BOOST * hybrid)
+
         score = float(sim * boost)
 
         hits.append({
