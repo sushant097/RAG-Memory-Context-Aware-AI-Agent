@@ -23,19 +23,24 @@ The backend follows the cognitive architecture:
 
 Each layer mirrors a mental function, powered by **Gemini models** and **vector memory**.
 
+```mermaid
+%% 4. Agentic Architecture Stack
+flowchart TD
+    A("🧠 Chrome Extension") --> B("HTTP API <br> (FastAPI)");
+    B --> C("Core Logic <br> (core.py)");
+    C --> D("MCP Tools <br> (mcp_tools.py)");
+    D --> E("Agentic Loop <br> (LLM Reasoning)");
+    E --> F("🗄️ FAISS Vector Store <br> (Long-Term Memory)");
+
+    %% Styling
+    style A fill:#4285F4,color:#fff
+    style B fill:#fbbc05,color:#333
+    style D fill:#7c4dff,color:#fff
+    style E fill:#EA4335,color:#fff
+    style F fill:#34a853,color:#fff
 ```
-Chrome Extension
-     ↓
-  HTTP API (FastAPI)
-     ↓
-   Core Logic
-     ↓
-  MCP Tools (index/search)
-     ↓
-  Agentic Loop (Gemini reasoning)
-     ↓
-  FAISS Vector Store (long-term memory)
-```
+
+
 
 | Layer          | Role                                                                                      |             |           |
 | -------------- | ----------------------------------------------------------------------------------------- | ----------- | --------- |
@@ -137,13 +142,7 @@ rag_memory_agent/
 
 ### 🔹 Indexing
 
-```
-Chrome → POST /index_page
-     ↓
-FastAPI → core.index_page_core()
-     ↓
-Chunks → Embeddings → FAISS + metadata
-```
+This diagram shows the "learning" flow, where a webpage is processed, embedded, and stored in the long-term FAISS memory.
 
 ```mermaid
 %% 1. Indexing Flow (Learning)
@@ -153,8 +152,8 @@ flowchart TD
     C --> D[FastAPI Backend];
     D --> E(core.index_page_core);
     E --> F(1. Chunk Text);
-    F --> G(2. Create Embeddings <br> [Google or Ollama]);
-    G --> H(3. Store in FAISS <br> + metadata.jsonl);
+    F --> G("2. Create Embeddings <br> [Google or Ollama]");
+    G --> H("3. Store in FAISS <br> + metadata.jsonl");
     H --> I[(🗄️ Long-Term Memory <br> FAISS Vector Store)];
 
     %% Styling
@@ -165,29 +164,19 @@ flowchart TD
 
 ### 🔹 Searching
 
-```
-User query → perception.py (Gemini)
-     ↓
-decision.py → FUNCTION_CALL: search_documents
-     ↓
-action.py → core.search_documents_core()
-     ↓
-FAISS search (semantic + temporal)
-     ↓
-Return URLs + snippets → highlight in Chrome
-```
+This diagram shows the full "recall" loop, where the agent perceives the user's query, plans a search, retrieves results, and ranks them using the hybrid-temporal model.
 
 ```mermaid
 %% 2. Agentic Search Flow (Recalling)
 flowchart TD
-    A[User Query <br> (CLI or Extension)] --> B(1. Perception <br> [Gemini classifies intent]);
-    B --> C(2. Add Query to STM <br> [memory.py]);
-    C --> D(3. Decision <br> [Gemini plans tool call]);
-    D --> E(4. Action <br> [execute(plan)]);
-    E --> F(5. Core Retrieval <br> [core.search_documents_core]);
+    A["User Query <br> (CLI or Extension)"] --> B("1. Perception <br> [Gemini classifies intent]");
+    B --> C("2. Add Query to STM <br> [memory.py]");
+    C --> D("3. Decision <br> [Gemini plans tool call]");
+    D --> E("4. Action <br> [execute(plan)]");
+    E --> F("5. Core Retrieval <br> [core.search_documents_core]");
     F -- "Queries" --> G[(🗄️ Long-Term Memory <br> FAISS Vector Store)];
     G -- "Returns Top-K Hits" --> F;
-    F --> H(6. Hybrid Temporal Ranking <br> [Freshness + Popularity]);
+    F --> H("6. Hybrid Temporal Ranking <br> [Freshness + Popularity]");
     H --> I(7. Add Result to STM);
     I --> J[✅ Formatted Answer];
 
@@ -385,11 +374,11 @@ graph TD
     end
 
     subgraph "Scoring Pipeline"
-        Q & C --> S(Semantic Similarity <br> [sim]);
-        TS --> F(Freshness Score <br> [exp(-λ * days)]);
-        V --> P(Popularity Score <br> [1 - exp(-visits/3)]);
-        F & P --> H(Hybrid Temporal Score <br> [w_f * freshness + w_p * pop]);
-        S & H --> FS(<b>Final Score</b> <br> [SIM_WEIGHT * sim + TEMP_WEIGHT * hybrid]);
+        Q & C --> S("Semantic Similarity <br> [sim]");
+        TS --> F("Freshness Score <br> [exp(-λ * days)]");
+        V --> P("Popularity Score <br> [1 - exp(-visits/3)]");
+        F & P --> H("Hybrid Temporal Score <br> [w_f * freshness + w_p * pop]");
+        S & H --> FS("<b>Final Score</b> <br> [SIM_WEIGHT * sim + TEMP_WEIGHT * hybrid]");
     end
 
     %% Styling
