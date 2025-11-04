@@ -319,29 +319,50 @@ This ensures the system works seamlessly **offline with Ollama** or **online wit
 
 ## 🕒 Temporal & Semantic Hybrid Ranking
 
-Retrieval doesn’t rely on cosine similarity alone. It also considers **how recently** a page was seen and optionally **how often** it was visited.
-Each FAISS hit is scored by combining its semantic match (`sim`) with a **temporal freshness boost**, giving newer or frequently revisited memories higher priority.
-This hybrid ranking turns current FAISS index into a **living memory** — continuously evolving as we browse.
+Retrieval now blends **semantic similarity** with a **bounded temporal-popularity signal** instead of multiplying them.
+Each FAISS hit is scored as a *weighted sum* where semantics dominate and freshness / frequency provide a gentle nudge.
 
 ### Concept
 
 ```python
-days = (now - timestamp) / 86400
-freshness = exp(-λ * days)           # exponential decay (half-life ~7 days)
-popularity = 1 - exp(-visits / 3)    # more visits → higher influence
-boost = 1 + α * (w_f*freshness + w_p*popularity)
-score = sim * boost
+# Weighted-blend scoring (Option A)
+score = (SIM_WEIGHT * sim) + (TEMP_WEIGHT * hybrid)
+
+# where:
+#   hybrid = w_f * freshness + w_p * popularity
+#   freshness = exp(-λ * days)      # exponential half-life (≈7 days)
+#   popularity = 1 - exp(-visits/3) # saturating with repeated visits
 ```
 
-* **Freshness:** recent pages fade smoothly over time (default half-life ≈ 7 days).
-* **Popularity:** repeated visits increase ranking weight.
-* **α (max boost):** limits total influence (e.g., ≤ 25 %).
-* **w_f / w_p:** control the relative weight of recency vs. frequency.
+**How it works**
 
-In simple terms:
+| Component        | Meaning                                                                                                            |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **sim**          | Pure cosine similarity between the query and stored chunk.                                                         |
+| **freshness**    | Exponentially decays with age so recent pages retain higher influence.                                             |
+| **popularity**   | Increases smoothly with visit count; a few revisits help, excessive visits saturate.                               |
+| **hybrid**       | Linear blend of freshness (`w_f`) and popularity (`w_p`).                                                          |
+| **Weighted sum** | Final `score` is mostly semantic (`SIM_WEIGHT ≈ 0.9`) with a small temporal-popularity term (`TEMP_WEIGHT ≈ 0.1`). |
 
-> *Recent or frequently visited pages surface first when semantic similarity is comparable.*
+This keeps **semantic relevance as the main driver** while allowing *recent or repeatedly visited pages* to break ties among equally similar results.
 
+### Default parameters
+
+| Parameter                                | Default   | Effect                            |
+| ---------------------------------------- | --------- | --------------------------------- |
+| `HALF_LIFE_DAYS`                         | 7         | Freshness halves every 7 days     |
+| `SIM_WEIGHT` / `TEMP_WEIGHT`             | 0.9 / 0.1 | Semantics ≈ 90 %, Temporal ≈ 10 % |
+| `FRESHNESS_WEIGHT` / `POPULARITY_WEIGHT` | 0.7 / 0.3 | Blend between recency & visits    |
+| `RECENCY_ALPHA`                          | —         | (Deprecated in blend mode)        |
+
+### Intuition
+
+> *Semantic similarity decides what’s relevant;
+> temporal-popularity decides which relevant results feel freshest.*
+
+In practice, this means that if two pages explain the same concept equally well, the one we **read recently** or **visit more often** will appear first — while irrelevant pages never outrank semantically strong ones.
+
+---
 
 ## Summary
 
