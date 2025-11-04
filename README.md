@@ -145,6 +145,24 @@ FastAPI → core.index_page_core()
 Chunks → Embeddings → FAISS + metadata
 ```
 
+```mermaid
+%% 1. Indexing Flow (Learning)
+flowchart TD
+    A[User visits a webpage] --> B(🧠 Chrome Extension);
+    B --> C{POST /index_page};
+    C --> D[FastAPI Backend];
+    D --> E(core.index_page_core);
+    E --> F(1. Chunk Text);
+    F --> G(2. Create Embeddings <br> [Google or Ollama]);
+    G --> H(3. Store in FAISS <br> + metadata.jsonl);
+    H --> I[(🗄️ Long-Term Memory <br> FAISS Vector Store)];
+
+    %% Styling
+    style B fill:#4285F4,color:#fff
+    style C fill:#fbbc05,color:#333
+    style I fill:#34a853,color:#fff
+```
+
 ### 🔹 Searching
 
 ```
@@ -157,6 +175,28 @@ action.py → core.search_documents_core()
 FAISS search (semantic + temporal)
      ↓
 Return URLs + snippets → highlight in Chrome
+```
+
+```mermaid
+%% 2. Agentic Search Flow (Recalling)
+flowchart TD
+    A[User Query <br> (CLI or Extension)] --> B(1. Perception <br> [Gemini classifies intent]);
+    B --> C(2. Add Query to STM <br> [memory.py]);
+    C --> D(3. Decision <br> [Gemini plans tool call]);
+    D --> E(4. Action <br> [execute(plan)]);
+    E --> F(5. Core Retrieval <br> [core.search_documents_core]);
+    F -- "Queries" --> G[(🗄️ Long-Term Memory <br> FAISS Vector Store)];
+    G -- "Returns Top-K Hits" --> F;
+    F --> H(6. Hybrid Temporal Ranking <br> [Freshness + Popularity]);
+    H --> I(7. Add Result to STM);
+    I --> J[✅ Formatted Answer];
+
+    %% Styling
+    style B fill:#EA4335,color:#fff
+    style D fill:#EA4335,color:#fff
+    style H fill:#fbbc05,color:#333
+    style G fill:#34a853,color:#fff
+    style J fill:#4285F4,color:#fff
 ```
 
 ---
@@ -332,6 +372,30 @@ score = (SIM_WEIGHT * sim) + (TEMP_WEIGHT * hybrid)
 #   hybrid = w_f * freshness + w_p * popularity
 #   freshness = exp(-λ * days)      # exponential half-life (≈7 days)
 #   popularity = 1 - exp(-visits/3) # saturating with repeated visits
+```
+
+```mermaid
+%% 3. Hybrid Ranking Formula
+graph TD
+    subgraph "Input Data"
+        Q[Query Vector]
+        C[Chunk Vector]
+        TS[Timestamp]
+        V[Visit Count]
+    end
+
+    subgraph "Scoring Pipeline"
+        Q & C --> S(Semantic Similarity <br> [sim]);
+        TS --> F(Freshness Score <br> [exp(-λ * days)]);
+        V --> P(Popularity Score <br> [1 - exp(-visits/3)]);
+        F & P --> H(Hybrid Temporal Score <br> [w_f * freshness + w_p * pop]);
+        S & H --> FS(<b>Final Score</b> <br> [SIM_WEIGHT * sim + TEMP_WEIGHT * hybrid]);
+    end
+
+    %% Styling
+    style S fill:#4285F4,color:#fff
+    style H fill:#fbbc05,color:#333
+    style FS fill:#34a853,color:#fff
 ```
 
 **How it works**
