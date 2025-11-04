@@ -271,6 +271,26 @@ python -m rag_memory_agent.agent
 
 ---
 
+## 🧩 Chrome Extension — Smart Memory + Highlighting
+
+The included Chrome MV3 extension not only indexes pages we visit — it also **highlights the exact text** when we click a search result.
+
+### ✨ Key Features
+
+* **Auto-Indexing:** Passively indexes the text of every page we visit (skipping confidential domains like Gmail or Slack).
+* **Configurable Denylist:** We can edit which sites to skip via the extension’s **Setting** page.
+* **Instant Recall:** Open the popup, type a query, and get back precise snippets with their URLs.
+* **Smart Highlighting:**
+  When we click a result, the extension:
+
+  1. Opens the original webpage.
+  2. Automatically scrolls and **highlights the exact text snippet** that matched query — using Chrome’s native `#:~:text=` link fragments plus a JavaScript fallback for all browsers.
+
+This makes recall **contextual and visual** — we’re taken right back to the exact paragraph where we learned something.
+
+---
+
+
 ## 🧩 Loading the Chrome Extension
 
 The repository includes a working Chrome MV3 extension inside the **`extension/`** folder.  
