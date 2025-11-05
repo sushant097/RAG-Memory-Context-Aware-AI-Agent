@@ -60,16 +60,45 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     if (msg?.type === "OPEN_AND_HIGHLIGHT") {
-      // Save the snippet in session storage under its URL, then open the tab.
-      const { url, snippet } = msg;
-      const key = `highlight::${url}`;
-      await chrome.storage.session.set({ [key]: snippet });
+      const { url, snippet, query } = msg;
 
-      const tab = await chrome.tabs.create({ url });
-      // Content will read storage.session on load and highlight.
+      // Build a text fragment from snippet or query (trim & shorten to stay safe)
+      const fragSource = (snippet && snippet.trim().length > 0 ? snippet : query) || "";
+      const frag = encodeURIComponent(fragSource.slice(0, 150)).replace(/%20/g, " ");
+      const urlWithFrag = fragSource ? `${url}#:~:text=${frag}` : url;
+
+      // Open the tab
+      const tab = await chrome.tabs.create({ url: urlWithFrag });
+
+      // When the tab finishes loading, ask content.js to highlight again (fallback)
+      const listener = async (tabId, changeInfo, updatedTab) => {
+        if (tabId === tab.id && changeInfo.status === "complete") {
+          chrome.tabs.sendMessage(tab.id, { type: "HIGHLIGHT", snippet, query });
+          chrome.tabs.onUpdated.removeListener(listener);
+        }
+      };
+      chrome.tabs.onUpdated.addListener(listener);
+
       sendResponse({ ok: true, tabId: tab.id });
       return;
     }
+
+    if (msg?.type === "VISIT") {
+      try {
+        const { apiBase } = await chrome.storage.sync.get(["apiBase"]);
+        const r = await fetch(`${apiBase}/visit`, {
+          method: "POST",
+          headers: {"content-type":"application/json"},
+          body: JSON.stringify({ url: msg.url })
+        });
+        const json = await r.json();
+        sendResponse({ ok: true, result: json });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e) });
+      }
+      return; // async
+    }
+
   })();
   // Indicate async response
   return true;
