@@ -15,9 +15,6 @@ keywords = ["RAG", "FAISS", "LlamaIndex", "Gemini", "Agent"]
 dependencies = [
   "python-dotenv>=0.9.9",
   "faiss-cpu>=1.10.0",
-  "google-genai>=1.9.0",
-  "llama-index>=0.12.28",
-  "llama-index-embeddings-google-genai>=0.1.0",
   "markitdown[all]>=0.1.1",
   "mcp[cli]>=1.6.0",
   "pillow>=11.1.0",
@@ -26,6 +23,9 @@ dependencies = [
   "tqdm>=4.66.0",
   "fastapi>=0.115.0",
   "uvicorn[standard]>=0.30.0",
+  "llama-index>=0.14.7",
+  "llama-index-embeddings-google-genai>=0.3.1",
+  "google-genai>=1.47.0",
 ]
 
 [project.scripts]
