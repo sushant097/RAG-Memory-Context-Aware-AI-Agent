@@ -14,6 +14,9 @@ class IndexPageIn(BaseModel):
     title: str
     text: str
 
+class VisitIn(BaseModel):
+    url: str
+    
 class SearchHit(BaseModel):
     url: str
     title: str
