@@ -37,6 +37,12 @@ HALF_LIFE_DAYS     = float(os.getenv("HALF_LIFE_DAYS", "7"))   # recency half-li
 FRESHNESS_WEIGHT   = float(os.getenv("FRESHNESS_WEIGHT", "0.7"))
 POPULARITY_WEIGHT  = float(os.getenv("POPULARITY_WEIGHT", "0.3"))
 MAX_TEMPORAL_BOOST = float(os.getenv("MAX_TEMPORAL_BOOST", "0.25"))  # ≤ 25% lift
+SIM_WEIGHT        = float(os.getenv("SIM_WEIGHT", "0.9"))
+TEMP_WEIGHT       = float(os.getenv("TEMP_WEIGHT", "0.1"))
+HALF_LIFE_DAYS    = float(os.getenv("HALF_LIFE_DAYS", "7"))
+FRESHNESS_WEIGHT  = float(os.getenv("FRESHNESS_WEIGHT", "0.7"))
+POPULARITY_WEIGHT = float(os.getenv("POPULARITY_WEIGHT", "0.3"))
+
 
 # ---------- Optional tuning ----------
 EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "100"))  # for Google
