@@ -15,6 +15,7 @@ We can think of it as a self-contained *AI hippocampus* for the browser.
 
 ---
 
+
 ## 🧩 Agentic Architecture
 
 The backend follows the cognitive architecture:
