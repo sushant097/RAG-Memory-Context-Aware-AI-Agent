@@ -16,7 +16,7 @@ We can think of it as a self-contained *AI hippocampus* for the browser.
 ---
 
 ## Demo:
-**Will be added soon**
+![](files/web_search_demo.gif)
 
 ## 🧩 Agentic Architecture
 
